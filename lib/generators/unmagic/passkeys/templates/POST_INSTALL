@@ -1,0 +1,19 @@
+
+  unmagic-passkeys installed.
+
+  Next:
+
+  1. Run the migration:
+       bin/rails db:migrate
+
+  2. Add passkeys to your holder model:
+       class User < ApplicationRecord
+         has_passkeys name: :email_address, display_name: :name
+       end
+
+  3. Wire up sign-in and registration controllers, routes and views.
+     See the README "Host wiring" section for copy-paste examples.
+
+  The challenge endpoint (POST /unmagic/passkeys/challenge) and the JavaScript
+  web components are already available.
+

@@ -1,0 +1,9 @@
+unmagic-passkeys
+
+The WebAuthn ceremony implementation (CBOR decoder, COSE key parsing,
+attestation/assertion handling, the passkey model, holder concern, form helpers
+and JavaScript web components) is derived from the in-progress `ActionPack::Passkey`
+work in the Rails / Basecamp codebases. It has been extracted, renamed under the
+`Unmagic::Passkeys` namespace, and packaged as a standalone Rails engine.
+
+Original authors retain credit for the underlying design and cryptography.
