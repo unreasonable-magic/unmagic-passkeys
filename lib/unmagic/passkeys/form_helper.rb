@@ -94,7 +94,7 @@ module Unmagic::Passkeys::FormHelper
     end
 
     def default_passkey_challenge_url
-      if challenge_url = Rails.configuration.unmagic_passkeys.challenge_url
+      if challenge_url = Unmagic::Passkeys.configuration.challenge_url
         instance_exec(&challenge_url)
       else
         passkey_challenge_path

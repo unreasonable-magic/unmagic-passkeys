@@ -27,19 +27,19 @@
 #
 # Call +has_passkeys+ in your model to set up the association and configure ceremony options
 # per-holder. See Unmagic::Passkeys::Holder for details.
-class Unmagic::Passkeys::Credential < Rails.configuration.unmagic_passkeys.parent_class_name.constantize
+class Unmagic::Passkeys::Credential < Unmagic::Passkeys.configuration.parent_class_name.constantize
   self.table_name = "unmagic_passkeys_credentials"
   belongs_to :holder, polymorphic: true
   serialize :transports, coder: JSON, type: Array, default: []
 
   class << self
     # Returns a CreationOptions object for the given +holder+, suitable for passing to the
-    # browser's +navigator.credentials.create()+ call. Merges global defaults from the Rails
-    # configuration, holder-specific options from +holder.passkey_registration_options+, and any
-    # additional +options+ overrides.
+    # browser's +navigator.credentials.create()+ call. Merges global defaults from
+    # +Unmagic::Passkeys.configuration+, holder-specific options from
+    # +holder.passkey_registration_options+, and any additional +options+ overrides.
     def registration_options(holder:, **options)
       Unmagic::Passkeys::WebAuthn::PublicKeyCredential.creation_options(
-        **Rails.configuration.unmagic_passkeys.web_authn.default_creation_options.to_h,
+        **Unmagic::Passkeys.configuration.default_creation_options.to_h,
         **holder.passkey_registration_options.to_h,
         **options
       )
@@ -64,7 +64,7 @@ class Unmagic::Passkeys::Credential < Rails.configuration.unmagic_passkeys.paren
     # options, and any additional +options+ overrides.
     def authentication_options(holder: nil, **options)
       Unmagic::Passkeys::WebAuthn::PublicKeyCredential.request_options(
-        **Rails.configuration.unmagic_passkeys.web_authn.default_request_options.to_h,
+        **Unmagic::Passkeys.configuration.default_request_options.to_h,
         **holder&.passkey_authentication_options.to_h,
         **options
       )

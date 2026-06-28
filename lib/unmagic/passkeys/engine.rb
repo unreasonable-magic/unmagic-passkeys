@@ -9,24 +9,19 @@ module Unmagic
     # == Configuration
     #
     #   # config/initializers/passkeys.rb
-    #   config.unmagic_passkeys.web_authn.default_creation_options = { attestation: :none }
-    #   config.unmagic_passkeys.web_authn.default_request_options  = { user_verification: :required }
-    #   config.unmagic_passkeys.routes_prefix = "/unmagic/passkeys"
+    #   Unmagic::Passkeys.configure do |config|
+    #     config.default_creation_options = { attestation: :none }
+    #     config.default_request_options  = { user_verification: :required }
+    #     config.routes_prefix            = "/unmagic/passkeys"
+    #   end
     class Engine < ::Rails::Engine
-      config.unmagic_passkeys = ActiveSupport::OrderedOptions.new
-      config.unmagic_passkeys.parent_class_name = "ApplicationRecord"
-      config.unmagic_passkeys.routes_prefix = "/unmagic/passkeys"
-      config.unmagic_passkeys.draw_routes = true
-      config.unmagic_passkeys.challenge_url = nil
-
-      config.unmagic_passkeys.web_authn = ActiveSupport::OrderedOptions.new
-      config.unmagic_passkeys.web_authn.default_request_options = {}
-      config.unmagic_passkeys.web_authn.default_creation_options = {}
-      config.unmagic_passkeys.web_authn.creation_challenge_expiration = 10.minutes
-      config.unmagic_passkeys.web_authn.request_challenge_expiration = 5.minutes
+      initializer "unmagic_passkeys.routes_macro" do
+        require "unmagic/passkeys/rails/routes"
+        ActionDispatch::Routing::Mapper.include Unmagic::Passkeys::Rails::Routes::Mapper
+      end
 
       initializer "unmagic_passkeys.routes" do |app|
-        passkey_config = config.unmagic_passkeys
+        passkey_config = Unmagic::Passkeys.configuration
 
         app.routes.prepend do
           if passkey_config.draw_routes

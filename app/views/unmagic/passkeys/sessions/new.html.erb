@@ -1,0 +1,7 @@
+<%# Default sign-in page (usernameless / discoverable credentials). Override by
+    creating a view at the same path (or at your subclass controller's view path). %>
+<main class="unmagic-passkeys">
+  <p>Sign in with your passkey.</p>
+  <%= passkey_sign_in_button "Sign in with a passkey", session_path,
+        options: @authentication_options, mediation: "conditional" %>
+</main>

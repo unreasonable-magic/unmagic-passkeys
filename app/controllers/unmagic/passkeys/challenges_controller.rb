@@ -12,8 +12,8 @@
 #
 # == Route
 #
-# By default mounted at +/rails/action_pack/passkey/challenge+ (configurable
-# via +config.unmagic_passkeys.routes_prefix+).
+# By default mounted at +/unmagic/passkeys/challenge+ (configurable via
+# +Unmagic::Passkeys.configuration.routes_prefix+).
 #
 class Unmagic::Passkeys::ChallengesController < ActionController::Base
   include Unmagic::Passkeys::Request
@@ -38,7 +38,7 @@ class Unmagic::Passkeys::ChallengesController < ActionController::Base
     end
 
     def challenge_expiration
-      config = Rails.configuration.unmagic_passkeys.web_authn
+      config = Unmagic::Passkeys.configuration
 
       if challenge_purpose == "registration"
         config.creation_challenge_expiration

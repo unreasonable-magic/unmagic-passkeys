@@ -29,7 +29,7 @@ RSpec.describe "Passkey registration and authentication ceremony" do
     credential = user.passkeys.register(build_attestation_params(challenge: webauthn_challenge(purpose: "registration")))
 
     tampered = build_assertion_params(challenge: webauthn_challenge(purpose: "authentication"), credential: credential)
-    tampered[:client_data_json] = { challenge: "not-the-signed-one", origin: WebauthnTestHelper::ORIGIN, type: "webauthn.get" }.to_json
+    tampered[:client_data_json] = { challenge: "not-the-signed-one", origin: webauthn_origin, type: "webauthn.get" }.to_json
 
     expect(Unmagic::Passkeys.authenticate(tampered)).to be_nil
   end

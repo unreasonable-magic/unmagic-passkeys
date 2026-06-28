@@ -64,20 +64,87 @@ The engine mounts a stateless challenge endpoint at `POST /unmagic/passkeys/chal
 
 ## Host wiring
 
-The engine ships the primitives; your app owns the login/registration controllers and
-views. The form helpers render self-contained web components — include the JS once:
+Include the JavaScript once — the form helpers render self-contained web components:
 
 ```js
 // app/javascript/application.js
 import "unmagic/passkeys"
 ```
 
-**Sign in** (`app/views/sessions/new.html.erb`):
+### Batteries included: `use_unmagic_passkeys`
 
-```erb
-<%= passkey_sign_in_button "Sign in with a passkey", session_passkey_path,
-      options: @authentication_options, mediation: "conditional" %>
+This draws the multi-user passkey auth flows and points them at the engine's
+base controllers:
+
+```ruby
+# config/routes.rb
+use_unmagic_passkeys
 ```
+
+| Flow          | Routes                                    | Controller                                |
+| ------------- | ----------------------------------------- | ----------------------------------------- |
+| `sessions`    | `GET/POST/DELETE /session`, `/session/new`| `Unmagic::Passkeys::SessionsController`    |
+| `credentials` | `/my/passkeys` (index/create/destroy)     | `Unmagic::Passkeys::CredentialsController` |
+
+Sign-in is **usernameless** (discoverable credentials), so the one sign-in page
+authenticates any user — multi-user out of the box. The controllers are
+policy-free; they call **hooks** you configure for the app-specific bits:
+
+```ruby
+# config/initializers/passkeys.rb
+Unmagic::Passkeys.configure do |config|
+  config.base_controller = "ApplicationController"       # so hooks see your helpers
+
+  config.sign_in        { |holder| start_new_session_for(holder) }
+  config.sign_out       { terminate_session }
+  config.current_holder { Current.user }                 # for /my/passkeys
+end
+```
+
+Customize by subclassing a base controller and re-pointing the route:
+
+```ruby
+# config/routes.rb
+use_unmagic_passkeys do
+  controllers sessions: "sessions", credentials: "my/passkeys"
+  # skip_controllers :credentials
+  # scope: "accounts"   # nest everything under a path
+end
+
+# app/controllers/sessions_controller.rb
+class SessionsController < Unmagic::Passkeys::SessionsController
+  rate_limit to: 10, within: 3.minutes
+  private def after_passkey_sign_in_path = after_authentication_url
+end
+```
+
+Each base controller exposes overridable methods for redirects and copy
+(`after_passkey_sign_in_path`, `after_passkey_sign_in_failure_path`,
+`after_passkey_sign_out_path`, `passkey_sign_in_failure_alert`). The default
+`sessions/new` and `credentials/index` views are overridable — drop a file at the
+same view path.
+
+### Signup is yours
+
+Account creation is the app's job — the engine authenticates holders, it doesn't
+own your user schema. Once you've created/identified a holder, register their
+first passkey with the same primitives the management flow uses, then sign them
+in:
+
+```ruby
+# Already-known holder (invite, email-first, OAuth, single-user bootstrap, …):
+@registration_options = Unmagic::Passkeys.registration_options(holder: user)  # -> render for the ceremony
+user.passkeys.register(passkey_registration_params)                           # verify + persist
+start_new_session_for(user)
+```
+
+### À la carte primitives
+
+Prefer to own the controllers? Skip the macro and use the building blocks
+directly. `Unmagic::Passkeys::Request` provides `passkey_registration_params`,
+`passkey_authentication_params`, `passkey_registration_options`,
+`passkey_authentication_options`, and sets `Unmagic::Passkeys::WebAuthn::Current`
+(host/origin) per request:
 
 ```ruby
 class Sessions::PasskeysController < ApplicationController
@@ -94,45 +161,54 @@ class Sessions::PasskeysController < ApplicationController
 end
 ```
 
-**Register** (signed-in):
-
-```erb
-<%= passkey_registration_button "Register a passkey", passkeys_path,
-      options: @registration_options %>
-```
-
-```ruby
-class PasskeysController < ApplicationController
-  include Unmagic::Passkeys::Request   # sets the WebAuthn request context + param helpers
-
-  def index
-    @registration_options = passkey_registration_options(holder: Current.user)
-  end
-
-  def create
-    Current.user.passkeys.register(passkey_registration_params)
-    redirect_to passkeys_path, notice: "Passkey added."
-  end
-end
-```
-
-`Unmagic::Passkeys::Request` provides `passkey_registration_params`,
-`passkey_authentication_params`, `passkey_registration_options`,
-`passkey_authentication_options`, and sets `Unmagic::Passkeys::WebAuthn::Current`
-(host/origin) per request.
-
 ## Configuration
+
+Configure the engine in a single block:
 
 ```ruby
 # config/initializers/passkeys.rb
-Rails.application.configure do
-  config.unmagic_passkeys.web_authn.default_creation_options = { attestation: :none }
-  config.unmagic_passkeys.web_authn.default_request_options  = { user_verification: :required }
-  config.unmagic_passkeys.web_authn.creation_challenge_expiration = 10.minutes
-  config.unmagic_passkeys.web_authn.request_challenge_expiration  = 5.minutes
-  # config.unmagic_passkeys.parent_class_name = "ApplicationRecord"
+Unmagic::Passkeys.configure do |config|
+  config.default_creation_options        = { attestation: :none }
+  config.default_request_options         = { user_verification: :required }
+  config.creation_challenge_expiration   = 10.minutes
+  config.request_challenge_expiration    = 5.minutes
+
+  # Relying party identity (default: request host / Rails.application.name)
+  # config.relying_party_id   = "example.com"
+  # config.relying_party_name = "Example"
+
+  # config.parent_class_name = "ApplicationRecord"
+  # config.routes_prefix     = "/unmagic/passkeys"   # set in config/application.rb if overriding
+  # config.draw_routes       = true
 end
 ```
+
+## Testing
+
+Mint valid WebAuthn ceremony payloads without a browser. Requiring the helper
+auto-includes it into Rails integration tests:
+
+```ruby
+# test/test_helper.rb
+require "unmagic/passkeys/test/helpers"
+
+# test/controllers/sessions/passkeys_controller_test.rb
+credential = register_passkey_for(@user)
+assertion  = in_webauthn_context do
+  build_assertion_params(challenge: webauthn_challenge(purpose: "authentication"), credential: credential)
+end
+post session_passkey_path, params: { passkey: assertion }
+```
+
+For RSpec (or any non-integration test), include it yourself:
+
+```ruby
+require "unmagic/passkeys/test/helpers"
+RSpec.configure { |c| c.include Unmagic::Passkeys::Test::Helpers }
+```
+
+It defaults the relying party to `www.example.com` (the integration-test host).
+Override `webauthn_rp_id` / `webauthn_origin` in your test class to use another.
 
 ## Development
 

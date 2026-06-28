@@ -25,7 +25,7 @@
 #   +Unmagic::Passkeys::WebAuthn.relying_party+.
 class Unmagic::Passkeys::WebAuthn::PublicKeyCredential::RequestOptions < Unmagic::Passkeys::WebAuthn::PublicKeyCredential::Options
   attribute :credentials, default: -> { [] }
-  attribute :challenge_expiration, default: -> { Rails.configuration.unmagic_passkeys.web_authn.request_challenge_expiration }
+  attribute :challenge_expiration, default: -> { Unmagic::Passkeys.configuration.request_challenge_expiration }
   attribute :challenge_purpose, default: "authentication"
 
   def initialize(attributes = {})

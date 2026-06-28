@@ -37,9 +37,16 @@ module Unmagic::Passkeys::WebAuthn
   class InvalidOptionsError < StandardError; end
 
   class << self
-    # Returns a new RelyingParty configured from the current request context.
+    # Returns a new RelyingParty. Identity comes from +Unmagic::Passkeys.configuration+
+    # when set, otherwise falls back to the current request host and
+    # +Rails.application.name+.
     def relying_party
-      RelyingParty.new
+      config = Unmagic::Passkeys.configuration
+
+      RelyingParty.new(
+        id: config.relying_party_id || Current.host,
+        name: config.relying_party_name || Rails.application.name
+      )
     end
 
     # Returns the MessageVerifier used to sign and verify WebAuthn challenges.

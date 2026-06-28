@@ -64,8 +64,8 @@ class Unmagic::Passkeys::WebAuthn::PublicKeyCredential::Options
   #
   # The timestamp allows the server to reject stale challenges. The expiration
   # window is configurable per-ceremony via
-  # +config.unmagic_passkeys.web_authn.creation_challenge_expiration+ and
-  # +config.unmagic_passkeys.web_authn.request_challenge_expiration+, or per-instance
+  # +Unmagic::Passkeys.configuration.creation_challenge_expiration+ and
+  # +Unmagic::Passkeys.configuration.request_challenge_expiration+, or per-instance
   # via the +challenge_expiration+ attribute.
   def challenge
     @challenge ||= Base64.urlsafe_encode64(

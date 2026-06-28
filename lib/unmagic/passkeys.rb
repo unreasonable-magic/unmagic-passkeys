@@ -9,6 +9,7 @@ require "json"
 require "digest"
 
 require "unmagic/passkeys/version"
+require "unmagic/passkeys/configuration"
 require "unmagic/passkeys/web_authn"
 require "unmagic/passkeys/holder"
 require "unmagic/passkeys/request"
@@ -20,7 +21,24 @@ module Unmagic
   # +Unmagic::Passkeys::Credential+ Active Record model so host code reads as
   # +Unmagic::Passkeys.authenticate(params)+.
   module Passkeys
+    # Raised when a controller flow needs a hook that has not been configured.
+    class ConfigurationError < StandardError; end
+
     class << self
+      # The singleton Configuration. Memoized with defaults; mutate via +configure+.
+      def configuration
+        @configuration ||= Configuration.new
+      end
+
+      # Configure the engine in a single block:
+      #
+      #   Unmagic::Passkeys.configure do |config|
+      #     config.relying_party_name = "Shopping"
+      #   end
+      def configure
+        yield configuration
+      end
+
       def registration_options(**options)
         Credential.registration_options(**options)
       end

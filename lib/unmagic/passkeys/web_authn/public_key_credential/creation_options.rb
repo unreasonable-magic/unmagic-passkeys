@@ -52,7 +52,7 @@ class Unmagic::Passkeys::WebAuthn::PublicKeyCredential::CreationOptions < Unmagi
   attribute :resident_key, default: :required
   attribute :exclude_credentials, default: -> { [] }
   attribute :attestation, default: :none
-  attribute :challenge_expiration, default: -> { Rails.configuration.unmagic_passkeys.web_authn.creation_challenge_expiration }
+  attribute :challenge_expiration, default: -> { Unmagic::Passkeys.configuration.creation_challenge_expiration }
   attribute :challenge_purpose, default: "registration"
 
   validates :id, :name, :display_name, presence: true
