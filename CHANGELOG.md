@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-06-28
+
 ### Added
 - Initial extraction: passkey (WebAuthn) registration and authentication for Rails
   as a self-contained engine — pure-Ruby CBOR/COSE/attestation/assertion, stateless
