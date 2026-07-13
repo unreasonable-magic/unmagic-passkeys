@@ -1,0 +1,5 @@
+<p>Create your account.</p>
+<%= form_with scope: :registration, url: registration_path do |form| %>
+  <%= form.email_field :email, required: true, autocomplete: "email" %>
+  <%= form.submit "Continue" %>
+<% end %>

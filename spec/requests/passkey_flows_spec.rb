@@ -2,10 +2,11 @@
 
 require "rails_helper"
 
-# Exercises the controllers mounted by use_unmagic_passkeys end to end. The
-# request host is www.example.com, which matches the test helper's relying
-# party, so payloads minted by the helper verify against the live request
-# context the controllers set up.
+# Exercises the dummy app's copy of the README's copy-paste controllers end to
+# end, proving the documented examples actually work. The request host is
+# www.example.com, which matches the test helper's relying party, so payloads
+# minted by the helper verify against the live request context the controllers
+# set up.
 RSpec.describe "Passkey flows" do
   let!(:user) { User.create!(email: "owner@example.com") }
 
@@ -72,7 +73,7 @@ RSpec.describe "Passkey flows" do
     it "lists the holder's passkeys" do
       sign_in!
 
-      get "/my/passkeys"
+      get "/passkeys"
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include(ActionView::RecordIdentifier.dom_id(user.passkeys.first))
@@ -82,10 +83,10 @@ RSpec.describe "Passkey flows" do
       sign_in!
 
       expect {
-        post "/my/passkeys", params: { passkey: registration_params }
+        post "/passkeys", params: { passkey: registration_params }
       }.to change { user.passkeys.count }.by(1)
 
-      expect(response).to redirect_to("/my/passkeys")
+      expect(response).to redirect_to("/passkeys")
     end
 
     it "removes a passkey" do
@@ -93,10 +94,65 @@ RSpec.describe "Passkey flows" do
       passkey = user.passkeys.first
 
       expect {
-        delete "/my/passkeys/#{passkey.id}"
+        delete "/passkeys/#{passkey.id}"
       }.to change { user.passkeys.count }.by(-1)
 
-      expect(response).to redirect_to("/my/passkeys")
+      expect(response).to redirect_to("/passkeys")
+    end
+  end
+
+  describe "signup" do
+    it "renders the identifier form" do
+      get "/registration/new"
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include(%(name="registration[email]"))
+    end
+
+    it "resolves the holder and renders the ceremony page with the identifier carried along" do
+      expect {
+        post "/registration", params: { registration: { email: "new@example.com" } }
+      }.to change { User.count }.by(1)
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include("unmagic-passkey-registration-button")
+      expect(response.body).to include(%(name="registration[email]"))
+      expect(response.body).to include("new@example.com")
+    end
+
+    it "registers the passkey and signs the holder in" do
+      post "/registration", params: { registration: { email: "new@example.com" }, passkey: registration_params }
+
+      holder = User.find_by!(email: "new@example.com")
+      expect(holder.passkeys.count).to eq(1)
+      expect(session[:holder_id]).to eq(holder.id)
+      expect(response).to be_redirect
+    end
+
+    it "reuses the holder created in the identifier phase (find-or-create)" do
+      post "/registration", params: { registration: { email: "new@example.com" } }
+
+      expect {
+        post "/registration", params: { registration: { email: "new@example.com" }, passkey: registration_params }
+      }.not_to change { User.count }
+
+      expect(User.find_by!(email: "new@example.com").passkeys.count).to eq(1)
+    end
+
+    it "redirects back when the email is invalid" do
+      post "/registration", params: { registration: { email: "" } }
+
+      expect(response).to redirect_to("/registration/new")
+    end
+
+    it "redirects back when the attestation is invalid" do
+      bad = build_attestation_params(challenge: webauthn_challenge(purpose: "authentication"))
+
+      post "/registration", params: { registration: { email: "new@example.com" }, passkey: bad }
+
+      expect(response).to redirect_to("/registration/new")
+      expect(session[:holder_id]).to be_nil
+      expect(User.find_by!(email: "new@example.com").passkeys.count).to eq(0)
     end
   end
 

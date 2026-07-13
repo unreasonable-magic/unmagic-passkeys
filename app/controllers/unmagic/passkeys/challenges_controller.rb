@@ -12,7 +12,7 @@
 #
 # == Route
 #
-# By default mounted at +/unmagic/passkeys/challenge+ (configurable via
+# By default mounted at +/auth/passkeys/challenge+ (configurable via
 # +Unmagic::Passkeys.configuration.routes_prefix+).
 #
 class Unmagic::Passkeys::ChallengesController < ActionController::Base

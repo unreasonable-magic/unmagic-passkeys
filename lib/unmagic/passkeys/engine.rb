@@ -12,14 +12,9 @@ module Unmagic
     #   Unmagic::Passkeys.configure do |config|
     #     config.default_creation_options = { attestation: :none }
     #     config.default_request_options  = { user_verification: :required }
-    #     config.routes_prefix            = "/unmagic/passkeys"
+    #     config.routes_prefix            = "/auth/passkeys"
     #   end
     class Engine < ::Rails::Engine
-      initializer "unmagic_passkeys.routes_macro" do
-        require "unmagic/passkeys/rails/routes"
-        ActionDispatch::Routing::Mapper.include Unmagic::Passkeys::Rails::Routes::Mapper
-      end
-
       initializer "unmagic_passkeys.routes" do |app|
         passkey_config = Unmagic::Passkeys.configuration
 

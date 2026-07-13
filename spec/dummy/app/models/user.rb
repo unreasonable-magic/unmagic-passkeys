@@ -2,4 +2,6 @@
 
 class User < ApplicationRecord
   has_passkeys name: :email, display_name: :email
+
+  validates :email, presence: true
 end

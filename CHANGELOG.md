@@ -2,6 +2,35 @@
 
 ## [Unreleased]
 
+### Added
+- `params:` option on `passkey_registration_button` / `passkey_sign_in_button`,
+  rendering extra hidden fields inside the ceremony form (like `button_to`'s
+  `params:`). The signup example uses it to carry the email through the
+  two-phase ceremony.
+- README "Host wiring" rewritten around copy-pasteable sign-in, signup, and
+  passkey-management controllers (Rails 8 `generate authentication`
+  vocabulary). The same controllers live in `spec/dummy` and are exercised end
+  to end by the request specs, including a two-phase signup ceremony where
+  `find_or_create_by!` makes signup and "existing user enrolling a new device"
+  the same flow.
+
+### Removed (breaking)
+- The shipped flow controllers and everything that existed to customize them:
+  `Unmagic::Passkeys::SessionsController` / `CredentialsController` /
+  `ApplicationController`, their views, the `use_unmagic_passkeys` router
+  macro, and the `sign_in` / `sign_out` / `current_holder` / `base_controller`
+  configuration hooks (plus `Unmagic::Passkeys::ConfigurationError`). They were
+  glue around app policy — session handling, redirects, flash copy — behind
+  three layers of indirection (hooks, subclassing, view overrides). Copy the
+  README's controllers into your app instead; the gem keeps the protocol-shaped
+  pieces: the WebAuthn library, `Credential` + `has_passkeys`, the challenge
+  endpoint, the `Request` concern, form helpers, JavaScript, and test helpers.
+
+### Changed (breaking)
+- Default `routes_prefix` (the challenge endpoint mount point) changed from
+  `/unmagic/passkeys` to `/auth/passkeys`. Set
+  `config.routes_prefix = "/unmagic/passkeys"` to keep the old URL.
+
 ## [0.2.0] - 2026-06-28
 
 ### Added

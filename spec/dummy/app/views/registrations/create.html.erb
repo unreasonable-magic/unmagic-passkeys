@@ -1,0 +1,3 @@
+<p>Secure your account with a passkey.</p>
+<%= passkey_registration_button "Create a passkey", registration_path,
+      options: @registration_options, params: { registration: { email: @email } } %>

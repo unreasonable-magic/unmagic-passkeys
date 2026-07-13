@@ -21,9 +21,6 @@ module Unmagic
   # +Unmagic::Passkeys::Credential+ Active Record model so host code reads as
   # +Unmagic::Passkeys.authenticate(params)+.
   module Passkeys
-    # Raised when a controller flow needs a hook that has not been configured.
-    class ConfigurationError < StandardError; end
-
     class << self
       # The singleton Configuration. Memoized with defaults; mutate via +configure+.
       def configuration

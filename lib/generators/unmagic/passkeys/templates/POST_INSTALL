@@ -14,6 +14,6 @@
   3. Wire up sign-in and registration controllers, routes and views.
      See the README "Host wiring" section for copy-paste examples.
 
-  The challenge endpoint (POST /unmagic/passkeys/challenge) and the JavaScript
+  The challenge endpoint (POST /auth/passkeys/challenge) and the JavaScript
   web components are already available.
 

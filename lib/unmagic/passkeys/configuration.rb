@@ -37,14 +37,9 @@ module Unmagic
       # +Rails.application.name+ respectively.
       attr_accessor :relying_party_id, :relying_party_name
 
-      # The controller the engine's base controllers inherit from. Inherit from
-      # the host's +ApplicationController+ so the hook blocks below can call your
-      # app's session helpers (e.g. +start_new_session_for+).
-      attr_accessor :base_controller
-
       def initialize
         @parent_class_name = "ApplicationRecord"
-        @routes_prefix = "/unmagic/passkeys"
+        @routes_prefix = "/auth/passkeys"
         @draw_routes = true
         @challenge_url = nil
         @default_creation_options = {}
@@ -53,41 +48,6 @@ module Unmagic
         @request_challenge_expiration = 5.minutes
         @relying_party_id = nil
         @relying_party_name = nil
-        @base_controller = "ApplicationController"
-        @sign_in = nil
-        @sign_out = nil
-        @current_holder = nil
-      end
-
-      # == Controller hooks
-      #
-      # Each is a block +instance_exec+'d in the engine's base controllers, so it
-      # has full access to the request, session, and any helpers your
-      # +base_controller+ provides. Call with a block to set, without to read.
-      #
-      # +sign_in+ turns an authenticated holder into an app session (required to
-      # use the sign-in flow). +sign_out+ tears it down. +current_holder+ returns
-      # the signed-in holder (used by the credentials management controller).
-      #
-      # Account creation (signup) is the host app's responsibility — once you've
-      # created/identified a holder, register a passkey for it with
-      # +holder.passkeys.register(params)+ and call +sign_in+.
-      #
-      #   Unmagic::Passkeys.configure do |config|
-      #     config.sign_in        { |holder| start_new_session_for(holder) }
-      #     config.sign_out       { terminate_session }
-      #     config.current_holder { Current.user }
-      #   end
-      def sign_in(&block)
-        block ? @sign_in = block : @sign_in
-      end
-
-      def sign_out(&block)
-        block ? @sign_out = block : @sign_out
-      end
-
-      def current_holder(&block)
-        block ? @current_holder = block : @current_holder
       end
     end
   end

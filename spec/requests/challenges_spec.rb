@@ -4,7 +4,7 @@ require "rails_helper"
 
 RSpec.describe "Passkey challenge endpoint" do
   it "issues a fresh signed challenge" do
-    post "/unmagic/passkeys/challenge", params: { purpose: "authentication" }
+    post "/auth/passkeys/challenge", params: { purpose: "authentication" }
 
     expect(response).to have_http_status(:ok)
     challenge = response.parsed_body["challenge"]

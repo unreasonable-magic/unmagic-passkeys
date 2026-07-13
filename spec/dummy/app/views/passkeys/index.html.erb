@@ -1,0 +1,13 @@
+<h1>Passkeys</h1>
+
+<ul>
+  <% @passkeys.each do |passkey| %>
+    <li id="<%= dom_id(passkey) %>">
+      <%= passkey.name.presence || "Passkey" %> — added <%= passkey.created_at.to_date.to_fs(:long) %>
+      <%= button_to "Remove", passkey_path(passkey), method: :delete %>
+    </li>
+  <% end %>
+</ul>
+
+<%= passkey_registration_button "Add a passkey", passkeys_path,
+      options: @registration_options %>

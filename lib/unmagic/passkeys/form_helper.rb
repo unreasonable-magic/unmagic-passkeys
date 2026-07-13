@@ -12,6 +12,8 @@ module Unmagic::Passkeys::FormHelper
   # Options:
   # - +options+: WebAuthn creation options (JSON-serializable hash)
   # - +challenge_url+: endpoint to refresh the challenge nonce
+  # - +params+: extra params submitted with the ceremony (rendered as hidden
+  #   fields, nested hashes/arrays supported — like +button_to+'s +params+)
   # - +wrapper+: HTML attributes for the outer web component element
   # - +form+: additional HTML attributes for the +<form>+ tag. Supports a +:param+ key
   #   to set the form parameter namespace (default: +:passkey+)
@@ -22,7 +24,7 @@ module Unmagic::Passkeys::FormHelper
   # - All other options are passed to the +<button>+ tag
   def passkey_registration_button(name = nil, url = nil, **options, &block)
     url, name = name, block ? capture(&block) : nil if block_given?
-    component_options, form_options, button_options, error_options = partition_passkey_options(url, options)
+    component_options, form_options, button_options, error_options, extra_params = partition_passkey_options(url, options)
     error_options[:error][:message] ||= REGISTRATION_ERROR_MESSAGE
     error_options[:cancellation][:message] ||= REGISTRATION_CANCELLED_MESSAGE
     error_options[:duplicate][:message] ||= REGISTRATION_DUPLICATE_MESSAGE
@@ -31,6 +33,7 @@ module Unmagic::Passkeys::FormHelper
     content_tag("unmagic-passkey-registration-button", **component_options.transform_keys { |key| key.to_s.dasherize }) do
       tag.form(**form_options) do
         hidden_field_tag(:authenticity_token, form_authenticity_token) +
+          passkey_extra_param_fields(extra_params) +
           hidden_field_tag("#{param}[client_data_json]", nil, id: nil, data: { passkey_field: "client_data_json" }) +
           hidden_field_tag("#{param}[attestation_object]", nil, id: nil, data: { passkey_field: "attestation_object" }) +
           hidden_field_tag("#{param}[transports][]", nil, id: nil, data: { passkey_field: "transports" }) +
@@ -45,6 +48,8 @@ module Unmagic::Passkeys::FormHelper
   # Options:
   # - +options+: WebAuthn request options (JSON-serializable hash)
   # - +challenge_url+: endpoint to refresh the challenge nonce
+  # - +params+: extra params submitted with the ceremony (rendered as hidden
+  #   fields, nested hashes/arrays supported — like +button_to+'s +params+)
   # - +mediation+: WebAuthn mediation hint (e.g. +"conditional"+ for autofill-assisted sign in)
   # - +wrapper+: HTML attributes for the outer web component element
   # - +form+: additional HTML attributes for the +<form>+ tag. Supports a +:param+ key
@@ -56,7 +61,7 @@ module Unmagic::Passkeys::FormHelper
   # - All other options are passed to the +<button>+ tag
   def passkey_sign_in_button(name = nil, url = nil, **options, &block)
     url, name = name, block ? capture(&block) : nil if block_given?
-    component_options, form_options, button_options, error_options = partition_passkey_options(url, options)
+    component_options, form_options, button_options, error_options, extra_params = partition_passkey_options(url, options)
     error_options[:error][:message] ||= SIGN_IN_ERROR_MESSAGE
     error_options[:cancellation][:message] ||= SIGN_IN_CANCELLED_MESSAGE
     param = form_options.delete(:param)
@@ -64,6 +69,7 @@ module Unmagic::Passkeys::FormHelper
     content_tag("unmagic-passkey-sign-in-button", **component_options.transform_keys { |key| key.to_s.dasherize }) do
       tag.form(**form_options) do
         hidden_field_tag(:authenticity_token, form_authenticity_token) +
+          passkey_extra_param_fields(extra_params) +
           hidden_field_tag("#{param}[id]", nil, id: nil, data: { passkey_field: "id" }) +
           hidden_field_tag("#{param}[client_data_json]", nil, id: nil, data: { passkey_field: "client_data_json" }) +
           hidden_field_tag("#{param}[authenticator_data]", nil, id: nil, data: { passkey_field: "authenticator_data" }) +
@@ -77,6 +83,7 @@ module Unmagic::Passkeys::FormHelper
     def partition_passkey_options(url, options)
       passkey_options = options.fetch(:options, {})
       wrapper_options = options.fetch(:wrapper, {})
+      extra_params = options.fetch(:params, {})
 
       component_options = options
         .slice(:challenge_url, :mediation)
@@ -88,9 +95,23 @@ module Unmagic::Passkeys::FormHelper
 
       error_options = options.slice(:error, :cancellation, :duplicate).reverse_merge(error: {}, cancellation: {}, duplicate: {})
 
-      button_options = options.except(:options, :form, :wrapper, *component_options.keys, *error_options.keys)
+      button_options = options.except(:options, :form, :wrapper, :params, *component_options.keys, *error_options.keys)
 
-      [ wrapper_options.merge(component_options), form_options, button_options, error_options ]
+      [ wrapper_options.merge(component_options), form_options, button_options, error_options, extra_params ]
+    end
+
+    # Renders the +params+ option as hidden fields, flattening nested hashes
+    # and arrays into standard Rails parameter names.
+    def passkey_extra_param_fields(params, namespace = nil)
+      safe_join(params.map do |key, value|
+        name = namespace ? "#{namespace}[#{key}]" : key.to_s
+
+        case value
+        when Hash then passkey_extra_param_fields(value, name)
+        when Array then safe_join(value.map { |item| hidden_field_tag("#{name}[]", item, id: nil) })
+        else hidden_field_tag(name, value, id: nil)
+        end
+      end)
     end
 
     def default_passkey_challenge_url
