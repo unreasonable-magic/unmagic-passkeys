@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-07-14
+
 ### Added
 - `params:` option on `passkey_registration_button` / `passkey_sign_in_button`,
   rendering extra hidden fields inside the ceremony form (like `button_to`'s
@@ -30,6 +32,13 @@
 - Default `routes_prefix` (the challenge endpoint mount point) changed from
   `/unmagic/passkeys` to `/auth/passkeys`. Set
   `config.routes_prefix = "/unmagic/passkeys"` to keep the old URL.
+
+### Fixed
+- `rails generate unmagic:passkeys:install` crashed on load in 0.2.0
+  (`uninitialized constant Unmagic::Passkeys::Rails::Generators`): the nested
+  `Unmagic::Passkeys::Rails` module shadowed the framework's `Rails` during the
+  generator's constant lookup. The generator now references `::Rails`
+  explicitly, with a regression spec covering the shadowed case.
 
 ## [0.2.0] - 2026-06-28
 

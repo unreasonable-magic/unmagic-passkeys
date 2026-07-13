@@ -9,7 +9,11 @@ module Unmagic
       # Installs unmagic-passkeys into a host app: copies the credentials migration
       # (matching the host's primary-key type), imports the JavaScript, and prints the
       # remaining controller/route/view wiring to do.
-      class InstallGenerator < Rails::Generators::Base
+      #
+      # +Rails+ is referenced with a leading +::+ throughout: inside the
+      # Unmagic::Passkeys namespace a nested constant named Rails (0.2.0 had one
+      # for the routes macro) shadows the framework and breaks the generator.
+      class InstallGenerator < ::Rails::Generators::Base
         include ActiveRecord::Generators::Migration
 
         source_root File.expand_path("templates", __dir__)
@@ -35,7 +39,7 @@ module Unmagic
 
         private
           def key_type
-            Rails.configuration.generators.options.dig(:active_record, :primary_key_type)
+            ::Rails.configuration.generators.options.dig(:active_record, :primary_key_type)
           end
 
           def table_id_option
