@@ -37,6 +37,12 @@ module Unmagic
       # +Rails.application.name+ respectively.
       attr_accessor :relying_party_id, :relying_party_name
 
+      # Origins allowed to use passkeys registered against this relying party,
+      # from a different registrable domain (WebAuthn Related Origin Requests).
+      # Each entry is a full origin, e.g. "https://app.example.com".
+      # The RP ID's own domain needs no entry here.
+      attr_accessor :related_origins
+
       def initialize
         @parent_class_name = "ApplicationRecord"
         @routes_prefix = "/auth/passkeys"
@@ -48,6 +54,7 @@ module Unmagic
         @request_challenge_expiration = 5.minutes
         @relying_party_id = nil
         @relying_party_name = nil
+        @related_origins = []
       end
     end
   end

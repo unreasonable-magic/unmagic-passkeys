@@ -108,7 +108,10 @@ class Unmagic::Passkeys::WebAuthn::Authenticator::Response
 
     def must_not_be_cross_origin
       if client_data["crossOrigin"] == true
-        errors.add(:base, "Cross-origin requests are not supported")
+        related = Unmagic::Passkeys.configuration.related_origins
+        unless related.include?(client_data["origin"])
+          errors.add(:base, "Cross-origin requests are not supported")
+        end
       end
     end
 
